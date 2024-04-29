@@ -108,6 +108,7 @@ length(unique(rest$Subject))
 ```{r}
 
 # pivoting wider to observe the reaction times for each verb type better
+
 wider_vt <- pivot_wider(rest, 
                            id_cols = c(Subject, Item, Position, NPPredictability), 
                            names_from = VerbType, 
@@ -119,6 +120,11 @@ wider_vt
 
 
 ```{r}
+mean_rt <- rest %>%
+  group_by(VerbType, Position) %>%
+  summarize(mean_RT = mean(RT))
+
+
 su_df <- wider_vt %>%
   summarise(
     mean_AspV = mean(AspV, na.rm = TRUE),
@@ -177,24 +183,26 @@ ggplot(longer_vt, aes(x = VerbType, y = RT, color = VerbType)) +
 ```
 Two types of box plot showing the distribution of reading times for each verb type. 
 
+According to the data and plots, it appears that the distribution of reading/reaction times is relatively similar. There are no distinctive differences besides Asp Verbs having some data points that have higher reaction times.
+
 2. How does the predictability of the noun phrase (NPPredictability) affect the processing of complement coercion sentences?
 ```{r}
+
 
 
 ggplot(longer_vt, aes(x = NPPredictability, y = RT, fill = VerbType)) +
   geom_boxplot() +
   labs(x = "Noun Phrase Predictability", y = "Reading Time (RT)", title = "Effect of Noun Phrase Predictability on Reading Time by Verb Type")
 
-ggplot(mean_rt, aes(x = Position, y = mean_RT, fill = VerbType)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(x = "Position", y = "Mean Reaction Time", fill = "Verb Type", title = "Interaction between VerbType and Position on Reaction Time")
-
 ```
 
-
+Based on the data and visualizations, it seems that the distribution of reading or reaction times is largely consistent across the different verb types according to noun phrase predictability. Apart from a few instances where Asp Verbs exhibit slightly higher reaction times, there are no significant deviations observed.
 
 3. Is there a relationship between the position of the item in the sentence (Position) and the reading time (RT)?
 ```{r}
+ggplot(mean_rt, aes(x = Position, y = mean_RT, fill = VerbType)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Position", y = "Mean Reaction Time", fill = "Verb Type", title = "Interaction between VerbType and Position on Reaction Time")
 
 
 ggplot(longer_vt, aes(x = Position, y = RT)) +
@@ -202,6 +210,10 @@ ggplot(longer_vt, aes(x = Position, y = RT)) +
   labs(x = "Position", y = "Reading Time (RT)", title = "Relationship between Position and Reading Time")
 
 ```
+The mean reaction times for all sentence position with Asp Verbs were higher than the nonPrefV and PrefV variables.
+
+4. How do interactions between different variables (e.g., VerbType and Position) influence participants' reaction times?
+
 
 ```{r}
 mean_rt <- rest |>
@@ -214,6 +226,9 @@ ggplot(mean_rt, aes(x = Position, y = mean_RT, color = VerbType, group = VerbTyp
   geom_point() +
   labs(x = "Position", y = "Mean Reaction Time", color = "Verb Type", title = "Interaction between VerbType and Position on Reaction Time")
 ```
+In this graph, there is a clearer difference in reaction times for sentences with AspV compared to sentences with NonPrefV and PrefV variables, regardless of positions. AspV, on average, indicates longer mean reaction times. This supports with the ultimate findings of the paper. 
+
+
 
 
 
