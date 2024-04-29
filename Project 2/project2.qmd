@@ -1,0 +1,234 @@
+---
+title: "Project 3"
+author: "Vivian O"
+format: 
+  html:
+    embed-resources: TRUE
+---
+
+```{r}
+#| warning: false
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+```
+
+## Processing of Complement Coercision on Aspectual Verbs in Mandarin Chinese
+
+
+
+This study delves into whether Chinese sentences employing "complement coercion" with aspectual verbs pose challenges for real-time comprehension. Complement coercion is when certain verbs (like "start" or "enjoy"), which typically require an action-based complement, are paired with a noun-based complement instead (e.g., "The author started a book" instead of "The author started writing a book").
+
+
+The study recorded self-paced reading times of 61 native Mandarin speakers to analyze the comprehension of entity-based complements in sentences containing three verb types: aspectual verbs, preferred verbs, and non-preferred words. 
+
+Results indicated that when the meaning of a verb was coerced to fit with a noun, such sentences incurred longer reading times compared to their non-coerced counterparts. These findings align with prior observations in English, suggesting that sentences involving complement coercion impose processing demands during real-time comprehension. 
+
+## Key Questions/Goals
+
+1. How does the reading time (RT) vary across different types of verbs (VerbType) in the dataset?
+
+2. How does the predictability of the noun phrase (NPPredictability) affect the processing of complement coercion sentences?
+
+3. Is there a relationship between the position of the item in the sentence (Position) and the reading time (RT)?
+
+4. How do interactions between different variables (e.g., VerbType and Position) influence participants' reaction times?
+
+
+## Codebook/Data Dictionary
+
+These are the variables in the raw data.
+
+
+1. Subject - Participant Identification
+
+2. Item - Identifier code for the specific stimulus
+
+3. VerbType - 
+
+    Aspectual verbs: require an event-denoting complement.
+  
+    Preferred verbs: denote a preferred interpretation of the aspectual expressions.
+  
+    Mon-preferred verbs: denote a non-preferred but plausible interpretation of the aspectual expressions.
+    
+
+4. Position - place of the item in an item
+
+5. RT - Reaction Time
+
+6. NPPredictability - predictability of the noun phrase associated with the stimulus
+
+## Data Importing & Cleaning
+
+```{r}
+#here::i_am("Project 2/project2.qmd")
+#library(here)
+#d <- read.csv("Project 2/Data.csv")
+```
+
+```{r}
+# Loading data -- copied from Code.R
+rtAll<-read.csv(file.choose(),header=TRUE)
+View(rtAll)
+```
+
+```{r}
+# Summarize the dataset
+summary(rtAll)
+str(rtAll)
+
+# Sum of the RTs data points
+length(rtAll$RT)
+```
+
+Checking for missing values
+
+```{r}
+colSums(is.na(rtAll))
+```
+```{r}
+# Defining the range of qualified data points
+up<-rtAll$RT==2000 
+low<-rtAll$RT==100
+
+# Removing outliers of RT > 2000 and RT < 100
+rest<-subset(rtAll,(rtAll$RT>100)&(rtAll$RT<2000))
+```
+
+```{r}
+# Checking for the number of participants in the study data
+length(unique(rest$Subject))
+```
+## Data Analysis
+
+1. How does the reading time (RT) vary across different types of verbs (VerbType) in the dataset?
+
+```{r}
+
+# pivoting wider to observe the reaction times for each verb type better
+
+wider_vt <- pivot_wider(rest, 
+                           id_cols = c(Subject, Item, Position, NPPredictability), 
+                           names_from = VerbType, 
+                           values_from = RT)
+
+wider_vt
+```
+
+
+
+```{r}
+mean_rt <- rest %>%
+  group_by(VerbType, Position) %>%
+  summarize(mean_RT = mean(RT))
+
+
+su_df <- wider_vt %>%
+  summarise(
+    mean_AspV = mean(AspV, na.rm = TRUE),
+    mean_PrefV = mean(PrefV, na.rm = TRUE),
+    mean_NonPrefV = mean(NonPrefV, na.rm = TRUE),
+    q1_AspV = quantile(AspV, 0.25, na.rm = TRUE),
+    q3_AspV = quantile(AspV, 0.75, na.rm = TRUE),
+    q1_PrefV = quantile(PrefV, 0.25, na.rm = TRUE),
+    q3_PrefV = quantile(PrefV, 0.75, na.rm = TRUE),
+    q1_NonPrefV = quantile(NonPrefV, 0.25, na.rm = TRUE),
+    q3_NonPrefV = quantile(NonPrefV, 0.75, na.rm = TRUE),
+    sd_AspV = sd(AspV, na.rm = TRUE),
+    sd_PrefV = sd(PrefV, na.rm = TRUE),
+    sd_NonPrefV = sd(NonPrefV, na.rm = TRUE)
+  )
+# Print the dataframe
+su_df
+
+# Pivot the dataframe longer
+su_df_long <- su_df %>%
+  pivot_longer(cols = starts_with(c("mean_", "q1_", "q3_", "sd_")),
+               names_to = c(".value", "data_type"),
+               names_sep = "_") %>%
+  mutate(data_type = factor(data_type, levels = c("mean", "q1", "q3", "sd")))
+
+
+
+
+# Print the formatted table
+su_table_long <- kable(su_df_long, "html") %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+
+
+su_table_long
+
+```
+
+
+```{r}
+longer_vt <- pivot_longer(wider_vt, 
+                           cols = c(AspV, PrefV, NonPrefV), 
+                           names_to = "VerbType", 
+                           values_to = "RT")
+
+# Create a box plot of reading time by verb type
+library(ggplot2)
+ggplot(longer_vt, aes(x = VerbType, y = RT)) +
+  geom_boxplot(fill = "skyblue", color = "black") +
+  labs(x = "Verb Type", y = "Reading Time (RT)", title = "Reading Time by Verb Type")
+
+ggplot(longer_vt, aes(x = VerbType, y = RT, color = VerbType)) +
+  geom_jitter(width = 0.2, height = 0, alpha = 0.7) +
+  geom_boxplot(width = 0.2, fill = "white", color = "black", outlier.shape = NA) +
+  labs(x = "Verb Type", y = "Reading Time (RT)", color = "Verb Type", title = "Reading Time by Verb Type")
+
+```
+Two types of box plot showing the distribution of reading times for each verb type. 
+
+According to the data and plots, it appears that the distribution of reading/reaction times is relatively similar. There are no distinctive differences besides Asp Verbs having some data points that have higher reaction times.
+
+2. How does the predictability of the noun phrase (NPPredictability) affect the processing of complement coercion sentences?
+```{r}
+
+
+
+ggplot(longer_vt, aes(x = NPPredictability, y = RT, fill = VerbType)) +
+  geom_boxplot() +
+  labs(x = "Noun Phrase Predictability", y = "Reading Time (RT)", title = "Effect of Noun Phrase Predictability on Reading Time by Verb Type")
+
+```
+
+Based on the data and visualizations, it seems that the distribution of reading or reaction times is largely consistent across the different verb types according to noun phrase predictability. Apart from a few instances where Asp Verbs exhibit slightly higher reaction times, there are no significant deviations observed.
+
+3. Is there a relationship between the position of the item in the sentence (Position) and the reading time (RT)?
+```{r}
+ggplot(mean_rt, aes(x = Position, y = mean_RT, fill = VerbType)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Position", y = "Mean Reaction Time", fill = "Verb Type", title = "Interaction between VerbType and Position on Reaction Time")
+
+
+ggplot(longer_vt, aes(x = Position, y = RT)) +
+  geom_point() +
+  labs(x = "Position", y = "Reading Time (RT)", title = "Relationship between Position and Reading Time")
+
+```
+The mean reaction times for all sentence position with Asp Verbs were higher than the nonPrefV and PrefV variables.
+
+4. How do interactions between different variables (e.g., VerbType and Position) influence participants' reaction times?
+
+
+```{r}
+mean_rt <- rest |>
+  group_by(VerbType, Position) |>
+  summarize(mean_RT = mean(RT))
+
+# Create a line plot to visualize the interaction between VerbType and Position on reaction time
+ggplot(mean_rt, aes(x = Position, y = mean_RT, color = VerbType, group = VerbType)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Position", y = "Mean Reaction Time", color = "Verb Type", title = "Interaction between VerbType and Position on Reaction Time")
+```
+In this graph, there is a clearer difference in reaction times for sentences with AspV compared to sentences with NonPrefV and PrefV variables, regardless of positions. AspV, on average, indicates longer mean reaction times. This supports with the ultimate findings of the paper. 
+
+
+
+
+
